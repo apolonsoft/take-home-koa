@@ -1,35 +1,22 @@
-import  Koa from 'koa';
+import Koa from 'koa';
 import Router from 'koa-router';
+import { Document } from './interfaces/document.interface';
+import { DocumentVersion } from './interfaces/document-version.interface';
+import { bodyParser } from '@koa/bodyparser';
+import { generateId } from './functions/generate_id.function';
 
 // Simple in-memory database
 const documents: Document[] = [];
 
-// Document model
-interface Document {
-    id: string;
-    title: string;
-    content: string;
-    createdAt: Date;
-    creatorId: string;
-    updatedAt: Date;
-    updateAuthorId: string;
-    versions: DocumentVersion[];
-}
-
-interface DocumentVersion {
-    version: number;
-    content: string;
-    updatedAt: Date;
-    updateAuthorId: string;
-}
-
 // Initialize Koa app and router
-const app = new Koa();
+export const app = new Koa();
 const router = new Router();
+
+app.use(bodyParser())
 
 // Editor API routes
 router.post('/documents', async (ctx: Koa.Context) => {
-    const { title, content, creatorId } = ctx.body as { title: string, content: string, creatorId: string };
+    const { title, content, creatorId } = ctx.request.body as { title: string, content: string, creatorId: string };
 
     const document: Document = {
         id: generateId(),
@@ -49,7 +36,7 @@ router.post('/documents', async (ctx: Koa.Context) => {
 
 router.put('/documents/:id', async (ctx: Koa.Context) => {
     const { id } = ctx.params;
-    const { content, updateAuthorId } = ctx.body as { content: string, updateAuthorId: string };
+    const { content, updateAuthorId } = ctx.request.body as { content: string, updateAuthorId: string };
 
     const document = documents.find((doc) => doc.id === id);
 
@@ -138,13 +125,11 @@ router.get('/published-documents/:id', async (ctx: Koa.Context) => {
     };
 });
 
-// Generate a unique ID for documents
-function generateId(): string {
-    return Math.random().toString(36).substr(2, 9);
-}
+
 
 // Use the router middleware
 app.use(router.routes()).use(router.allowedMethods());
+
 
 // Start the server
 app.listen(4000, () => {
